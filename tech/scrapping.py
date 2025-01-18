@@ -24,25 +24,21 @@ async def get_msg(app, chat_id, sent_data):
         print(f"Обработка чата с ID {chat_id} началась.")
         chat = await app.get_chat(chat_id)
         async for message in app.get_chat_history(chat.id, limit=200):
-            if not message.from_user or not message.text:
-                continue
-
             user_id = str(message.from_user.id)
             message_id = str(message.id)
 
-            async with sent_data_lock:
-                if message_id in sent_data.get(user_id, set()):
-                    print(f"Сообщение {message_id} уже отправлено пользователю {user_id}. Пропуск.")
-                    continue
+            if (
+                message.from_user
+                and message.text
+                and message_id not in sent_data.get(user_id, set())
+            ):
+                text_lower = message.text.lower()
 
-                if any(word in message.text for word in white_list) and not any(word in message.text for word in black_list):
+                if any(word in text_lower for word in white_list) and not any(
+                    word in text_lower for word in black_list
+                ):
                     username = message.from_user.username
-                    user_link = f"https://t.me/{username}" if username else None
-
-                    if chat.username:
-                        message_link = f"https://t.me/{chat.username}/{message_id}"
-                    else:
-                        message_link = f"https://t.me/c/{abs(chat.id)}/{message_id}"
+                    user_link = f"https://t.me/{username}" if username else f"tg://user?id={user_id}"
 
                     if user_id not in sent_data:
                         sent_data[user_id] = set()
@@ -50,6 +46,6 @@ async def get_msg(app, chat_id, sent_data):
 
                     await save_sent_messages(sent_data)
 
-                    yield message.text, user_link, message_link
+                    yield message.text, user_link, message_id, user_id
     except Exception as e:
         print(f"Ошибка в get_msg для чата {chat_id}: {e}")
