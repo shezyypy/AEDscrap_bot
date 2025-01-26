@@ -46,6 +46,6 @@ async def get_msg(app, chat_id, sent_data):
 
                     await save_sent_messages(sent_data)
 
-                    yield message.text, user_link, message_id, user_id
+                    yield message.text, user_link, message_id
     except Exception as e:
         print(f"Ошибка в get_msg для чата {chat_id}: {e}")
